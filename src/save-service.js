@@ -1,7 +1,31 @@
 import { createDefaultStatsState, sanitizeStats } from './domain/stats/registry.js';
 
 const SAVE_KEY = 'game-save';
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
+
+const migrations = {
+  1: (payload) => {
+    const runtimeState = payload.runtimeState && typeof payload.runtimeState === 'object'
+      ? payload.runtimeState
+      : {};
+    const legacyEquipped =
+      runtimeState.equippedEquipmentIds && typeof runtimeState.equippedEquipmentIds === 'object'
+        ? runtimeState.equippedEquipmentIds
+        : {};
+
+    return {
+      ...payload,
+      saveVersion: 2,
+      runtimeState: {
+        ...runtimeState,
+        equippedBySlot:
+          runtimeState.equippedBySlot && typeof runtimeState.equippedBySlot === 'object'
+            ? runtimeState.equippedBySlot
+            : legacyEquipped,
+      },
+    };
+  },
+};
 
 export const defaultRuntimeState = Object.freeze({
   stats: Object.freeze(createDefaultStatsState()),
@@ -12,7 +36,7 @@ export const defaultRuntimeState = Object.freeze({
     level: 1,
   },
   ownedEquipmentIds: [],
-  equippedEquipmentIds: {},
+  equippedBySlot: {},
 });
 
 function cloneDefaultState() {
@@ -25,11 +49,18 @@ function cloneDefaultState() {
       level: 1,
     },
     ownedEquipmentIds: [],
-    equippedEquipmentIds: {},
+    equippedBySlot: {},
   };
 }
 
 function sanitizeRuntimeState(state = {}) {
+  const equippedBySlot =
+    state.equippedBySlot && typeof state.equippedBySlot === 'object'
+      ? state.equippedBySlot
+      : state.equippedEquipmentIds && typeof state.equippedEquipmentIds === 'object'
+        ? state.equippedEquipmentIds
+        : {};
+
   return {
     stats: sanitizeStats(state.stats),
     taskProgress:
@@ -44,11 +75,36 @@ function sanitizeRuntimeState(state = {}) {
     ownedEquipmentIds: Array.isArray(state.ownedEquipmentIds)
       ? state.ownedEquipmentIds
       : [],
-    equippedEquipmentIds:
-      state.equippedEquipmentIds && typeof state.equippedEquipmentIds === 'object'
-        ? state.equippedEquipmentIds
-        : {},
+    equippedBySlot,
   };
+}
+
+function migrateSavePayload(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  let version = Number.isInteger(payload.saveVersion) ? payload.saveVersion : 1;
+  if (version < 1 || version > SAVE_VERSION) {
+    return null;
+  }
+
+  let migrated = {
+    ...payload,
+    saveVersion: version,
+  };
+
+  while (version < SAVE_VERSION) {
+    const migration = migrations[version];
+    if (!migration) {
+      return null;
+    }
+
+    migrated = migration(migrated);
+    version = migrated.saveVersion;
+  }
+
+  return migrated;
 }
 
 export function buildSavePayload(runtimeState) {
@@ -82,17 +138,14 @@ export function loadGame(storage = globalThis.localStorage) {
 
   try {
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') {
-      return defaults;
-    }
-
-    if (parsed.saveVersion !== SAVE_VERSION) {
+    const migrated = migrateSavePayload(parsed);
+    if (!migrated) {
       return defaults;
     }
 
     return {
       ...defaults,
-      ...sanitizeRuntimeState(parsed.runtimeState),
+      ...sanitizeRuntimeState(migrated.runtimeState),
     };
   } catch {
     return defaults;

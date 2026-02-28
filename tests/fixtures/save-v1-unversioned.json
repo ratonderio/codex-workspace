@@ -1,0 +1,16 @@
+{
+  "runtimeState": {
+    "stats": {
+      "strength": { "points": 3 }
+    },
+    "taskProgress": {
+      "strength": { "level": 1, "masteryTier": 0, "masteryMultiplier": 1, "elapsed": 0 }
+    },
+    "money": 15,
+    "job": { "xp": 4, "level": 1 },
+    "ownedEquipmentIds": ["hat-1"],
+    "equippedEquipmentIds": {
+      "head": "hat-1"
+    }
+  }
+}
