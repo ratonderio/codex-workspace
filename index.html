@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Incremental Type Hero</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header>
+        <p class="kicker">Incremental Prototype</p>
+        <h1>Type Hero: Training Grounds</h1>
+        <p class="subtitle">
+          Train stats, take jobs, and build mastery. Each level gets slower, so
+          multipliers and task planning matter.
+        </p>
+      </header>
+
+      <section class="overview-grid" aria-label="Player overview">
+        <article class="panel resources-panel">
+          <h2>Economy</h2>
+          <div class="resource-row">
+            <span>Money</span>
+            <strong id="money-value">$0.00</strong>
+          </div>
+          <div class="resource-row">
+            <span>Job XP</span>
+            <strong id="job-xp-value">0</strong>
+          </div>
+          <div class="resource-row">
+            <span>Job Level</span>
+            <strong id="job-level-value">1 (placeholder)</strong>
+          </div>
+        </article>
+
+        <article class="panel equipment-panel">
+          <h2>Equipment (Coming Soon)</h2>
+          <p>
+            Slots and bonuses will live here. In a later pass, items will modify
+            stat gain speed, work payout, and mastery scaling.
+          </p>
+          <div class="equipment-slots">
+            <span>Weapon</span><span>Armor</span><span>Accessory</span><span>Tool</span>
+          </div>
+        </article>
+      </section>
+
+      <section class="stats" aria-label="Character stats">
+        <article class="stat-card" data-stat="strength">
+          <h2>Strength</h2>
+          <p class="stat-value" id="strength-value">0</p>
+          <div class="progress-track">
+            <div class="progress-fill" id="strength-progress"></div>
+          </div>
+          <p class="progress-label" id="strength-label">Idle</p>
+        </article>
+
+        <article class="stat-card" data-stat="endurance">
+          <h2>Endurance</h2>
+          <p class="stat-value" id="endurance-value">0</p>
+          <div class="progress-track">
+            <div class="progress-fill" id="endurance-progress"></div>
+          </div>
+          <p class="progress-label" id="endurance-label">Idle</p>
+        </article>
+
+        <article class="stat-card" data-stat="dexterity">
+          <h2>Dexterity</h2>
+          <p class="stat-value" id="dexterity-value">0</p>
+          <div class="progress-track">
+            <div class="progress-fill" id="dexterity-progress"></div>
+          </div>
+          <p class="progress-label" id="dexterity-label">Idle</p>
+        </article>
+      </section>
+
+      <section class="controls" aria-label="Task controls">
+        <button class="task-btn" data-task="strength">
+          Lift Weights <span>+STR</span>
+        </button>
+        <button class="task-btn" data-task="endurance">
+          Long Run <span>+END</span>
+        </button>
+        <button class="task-btn" data-task="dexterity">
+          Precision Drill <span>+DEX</span>
+        </button>
+        <button class="task-btn work" data-task="work">
+          Warehouse Shift <span>+$ / +XP</span>
+        </button>
+        <button class="task-btn idle" data-task="idle">Idle</button>
+      </section>
+
+      <section class="panel mastery-panel" aria-label="Task mastery">
+        <h2>Task Mastery</h2>
+        <p>
+          Every <strong>100 task levels</strong> grants <strong>+5%</strong> reward
+          multiplier for that task.
+        </p>
+        <div class="mastery-grid">
+          <article class="mastery-card" id="mastery-strength"></article>
+          <article class="mastery-card" id="mastery-endurance"></article>
+          <article class="mastery-card" id="mastery-dexterity"></article>
+          <article class="mastery-card" id="mastery-work"></article>
+        </div>
+      </section>
+
+      <footer class="status-panel">
+        <p id="active-task">Current task: <strong>Idle</strong></p>
+        <p id="next-gain">Next completion in --</p>
+      </footer>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
