@@ -1,0 +1,21 @@
+{
+  "saveVersion": 1,
+  "runtimeState": {
+    "stats": {
+      "strength": { "points": 12 },
+      "agility": { "points": 8.5 },
+      "focus": { "points": 4 }
+    },
+    "taskProgress": {
+      "strength": { "level": 10, "masteryTier": 2, "masteryMultiplier": 1.1, "elapsed": 0.3 },
+      "work": { "level": 4, "masteryTier": 0, "masteryMultiplier": 1, "elapsed": 0.2 }
+    },
+    "money": 425,
+    "job": { "xp": 96, "level": 3 },
+    "ownedEquipmentIds": ["boots-1", "gloves-2"],
+    "equippedEquipmentIds": {
+      "feet": "boots-1",
+      "hands": "gloves-2"
+    }
+  }
+}
