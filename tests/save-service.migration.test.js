@@ -53,3 +53,69 @@ test('buildSavePayload always emits latest version and new equipment key', () =>
   assert.deepEqual(payload.runtimeState.equippedBySlot, { neck: 'amulet-1' });
   assert.equal('equippedEquipmentIds' in payload.runtimeState, false);
 });
+
+
+test('loadGame sanitizes malformed task progress entries', () => {
+  const loaded = loadGame(
+    storageWithPayload({
+      saveVersion: 2,
+      runtimeState: {
+        taskProgress: {
+          strength: {
+            level: 'bad',
+            masteryTier: null,
+            masteryMultiplier: undefined,
+            elapsed: 'bad',
+          },
+          courier: 42,
+        },
+      },
+    }),
+  );
+
+  assert.deepEqual(loaded.taskProgress, {
+    strength: {
+      level: 0,
+      masteryTier: 0,
+      masteryMultiplier: 1,
+      elapsed: 0,
+    },
+    courier: {
+      level: 0,
+      masteryTier: 0,
+      masteryMultiplier: 1,
+      elapsed: 0,
+    },
+  });
+});
+
+test('buildSavePayload normalizes task progress shape', () => {
+  const payload = buildSavePayload({
+    taskProgress: {
+      warehouse: {
+        level: 3,
+        masteryTier: 0,
+        masteryMultiplier: 1,
+        elapsed: 1.2,
+      },
+      artisan: {
+        level: Number.NaN,
+      },
+    },
+  });
+
+  assert.deepEqual(payload.runtimeState.taskProgress, {
+    warehouse: {
+      level: 3,
+      masteryTier: 0,
+      masteryMultiplier: 1,
+      elapsed: 1.2,
+    },
+    artisan: {
+      level: 0,
+      masteryTier: 0,
+      masteryMultiplier: 1,
+      elapsed: 0,
+    },
+  });
+});
