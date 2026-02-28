@@ -1,5 +1,7 @@
+import { assertValidEquipmentDefinitions } from './domain/equipment/schema.js';
 export function indexEquipmentDefinitions(definitions = []) {
-  return new Map(definitions.map((definition) => [definition.id, definition]));
+  const validDefinitions = assertValidEquipmentDefinitions(definitions);
+  return new Map(validDefinitions.map((definition) => [definition.id, definition]));
 }
 
 export function buildEquipmentViewModel({

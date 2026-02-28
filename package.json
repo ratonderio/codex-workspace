@@ -1,0 +1,11 @@
+{
+  "name": "codex-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "validate-content": "node scripts/validate-content.js",
+    "precommit": "npm run validate-content && npm test",
+    "prepare": "git config core.hooksPath .githooks || true"
+  }
+}

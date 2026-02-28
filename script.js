@@ -6,6 +6,7 @@ import {
 import { getJobById, jobRegistry } from './src/domain/jobs/registry.js';
 import { buildEquipmentViewModel } from './src/equipment-ui.js';
 import { createSaveService } from './src/save-service.js';
+import { validateEquipmentDefinitions } from './src/domain/equipment/schema.js';
 
 const MASTERY_LEVEL_STEP = 100;
 const MASTERY_BONUS_STEP = 0.05;
@@ -369,9 +370,13 @@ async function loadEquipmentDefinitions() {
     }
 
     const payload = await response.json();
-    if (Array.isArray(payload)) {
+    const validation = validateEquipmentDefinitions(payload);
+    if (validation.isValid) {
       state.equipmentDefinitions = payload;
+      return;
     }
+
+    console.error('Skipping invalid equipment definitions.', validation.errors);
   } catch {
     // Best effort; keep app running without equipment definitions.
   }
