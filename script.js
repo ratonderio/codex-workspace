@@ -8,6 +8,7 @@ import { buildEquipmentViewModel } from './src/equipment-ui.js';
 import { createSaveService } from './src/save-service.js';
 import { normalizeTaskProgressEntry } from './src/domain/tasks/progress.js';
 import { validateEquipmentDefinitions } from './src/domain/equipment/schema.js';
+import { mergeContentPacks } from './src/content/pack-loader.js';
 
 const MASTERY_LEVEL_STEP = 100;
 const MASTERY_BONUS_STEP = 0.05;
@@ -30,6 +31,7 @@ const state = {
     itemRank: {},
   },
   equipmentDefinitions: [],
+  taskDefinitions: [],
 };
 
 function createEventBus() {
@@ -50,41 +52,36 @@ function createEventBus() {
 
 const eventBus = createEventBus();
 
-const statTaskMeta = Object.fromEntries(
-  statRegistry.map((stat) => [
-    stat.id,
-    {
+function toLocalId(scopedId = '') {
+  const separatorIndex = scopedId.indexOf(':');
+  if (separatorIndex < 0) {
+    return scopedId;
+  }
+
+  return scopedId.slice(separatorIndex + 1);
+}
+
+function buildDefaultTaskDefinitions() {
+  return [
+    ...statRegistry.map((stat) => ({
+      id: stat.id,
       label: `${stat.label} Training`,
       type: 'stat',
       stat: stat.id,
-    },
-  ]),
-);
-
-const jobTaskMeta = Object.fromEntries(
-  jobRegistry.map((job) => [
-    job.id,
-    {
+    })),
+    ...jobRegistry.map((job) => ({
+      id: job.id,
       label: job.label,
       type: 'job',
       job: job.id,
-    },
-  ]),
-);
+    })),
+    { id: 'idle', label: 'Idle', type: 'idle' },
+  ];
+}
 
-const taskMeta = {
-  ...statTaskMeta,
-  ...jobTaskMeta,
-  idle: { label: 'Idle', type: 'idle' },
-};
-
-const taskOrder = [
-  ...statRegistry.map((stat) => stat.id),
-  ...jobRegistry.map((job) => job.id),
-  'idle',
-];
-
-const masteryTaskOrder = taskOrder.filter((taskName) => taskName !== 'idle');
+let taskMeta = {};
+let taskOrder = [];
+let masteryTaskOrder = [];
 
 let activeTask = 'idle';
 let previousTimestamp = performance.now();
@@ -137,31 +134,102 @@ function createMasteryCardMarkup(taskName) {
   return `<article class="mastery-card" id="mastery-${taskName}"></article>`;
 }
 
+function rebuildTaskCollections() {
+  const definitions = Array.isArray(state.taskDefinitions) && state.taskDefinitions.length > 0
+    ? state.taskDefinitions
+    : buildDefaultTaskDefinitions();
+
+  const nextMeta = {};
+  const seen = new Set();
+
+  definitions.forEach((task) => {
+    if (!task?.id || seen.has(task.id)) {
+      return;
+    }
+
+    if (task.type === 'stat') {
+      const linkedStatId = task.stat ?? task.id;
+      const resolvedStat = getStatById(linkedStatId) ?? getStatById(toLocalId(linkedStatId));
+      if (!resolvedStat) {
+        return;
+      }
+
+      nextMeta[task.id] = {
+        label: task.label ?? `${resolvedStat.label} Training`,
+        type: 'stat',
+        stat: resolvedStat.id,
+      };
+      seen.add(task.id);
+      return;
+    }
+
+    if (task.type === 'job') {
+      const linkedJobId = task.job ?? task.id;
+      const resolvedJob = getJobById(linkedJobId) ?? getJobById(toLocalId(linkedJobId));
+      if (!resolvedJob) {
+        return;
+      }
+
+      nextMeta[task.id] = {
+        label: task.label ?? resolvedJob.label,
+        type: 'job',
+        job: resolvedJob.id,
+      };
+      seen.add(task.id);
+      return;
+    }
+
+    if (task.type === 'idle') {
+      nextMeta[task.id] = {
+        label: task.label ?? 'Idle',
+        type: 'idle',
+      };
+      seen.add(task.id);
+    }
+  });
+
+  if (!nextMeta.idle) {
+    nextMeta.idle = { label: 'Idle', type: 'idle' };
+  }
+
+  taskMeta = nextMeta;
+  taskOrder = [...Object.keys(taskMeta).filter((taskId) => taskId !== 'idle'), 'idle'];
+  masteryTaskOrder = taskOrder.filter((taskName) => taskName !== 'idle');
+}
+
 function toTaskProgress(source) {
   return normalizeTaskProgressEntry(source);
 }
 
 function ensureTaskState() {
   const existing = state.runtime.taskProgress ?? {};
+  const nextProgress = {};
+
   masteryTaskOrder.forEach((taskName) => {
-    state.runtime.taskProgress[taskName] = toTaskProgress(existing[taskName]);
+    nextProgress[taskName] = toTaskProgress(existing[taskName]);
   });
+
+  state.runtime.taskProgress = nextProgress;
 }
 
 function baseSecondsForTask(taskName) {
-  if (jobTaskMeta[taskName]) {
-    return getJobById(taskName)?.baseSeconds ?? 4;
+  const task = taskMeta[taskName];
+
+  if (task?.type === 'job') {
+    return getJobById(task.job)?.baseSeconds ?? 4;
   }
 
-  return getStatById(taskName)?.growth.taskBaseSeconds ?? 2.5;
+  return getStatById(task?.stat)?.growth.taskBaseSeconds ?? 2.5;
 }
 
 function scaleFactorForTask(taskName) {
-  if (jobTaskMeta[taskName]) {
-    return getJobById(taskName)?.scaleFactor ?? 0.2;
+  const task = taskMeta[taskName];
+
+  if (task?.type === 'job') {
+    return getJobById(task.job)?.scaleFactor ?? 0.2;
   }
 
-  return getStatById(taskName)?.growth.taskScaleFactor ?? 0.3;
+  return getStatById(task?.stat)?.growth.taskScaleFactor ?? 0.3;
 }
 
 function renderStaticCollections() {
@@ -174,31 +242,40 @@ function renderStaticCollections() {
   masteryGridEl.innerHTML = masteryTaskOrder.map(createMasteryCardMarkup).join('');
 }
 
-renderStaticCollections();
+let statEls = {};
+let masteryEls = {};
+let buttons = [];
 
-const statEls = Object.fromEntries(
-  statRegistry.map((stat) => {
-    const id = stat.id;
-    return [
-      id,
-      {
-        value: document.querySelector(`#${id}-value`),
-        bar: document.querySelector(`#${id}-progress`),
-        label: document.querySelector(`#${id}-label`),
-        card: document.querySelector(`[data-stat="${id}"]`),
-      },
-    ];
-  }),
-);
+function bindTaskControls() {
+  statEls = Object.fromEntries(
+    statRegistry.map((stat) => {
+      const id = stat.id;
+      return [
+        id,
+        {
+          value: document.querySelector(`#${id}-value`),
+          bar: document.querySelector(`#${id}-progress`),
+          label: document.querySelector(`#${id}-label`),
+          card: document.querySelector(`[data-stat="${id}"]`),
+        },
+      ];
+    }),
+  );
 
-const masteryEls = Object.fromEntries(
-  masteryTaskOrder.map((taskName) => [
-    taskName,
-    document.querySelector(`#mastery-${taskName}`),
-  ]),
-);
+  masteryEls = Object.fromEntries(
+    masteryTaskOrder.map((taskName) => [
+      taskName,
+      document.querySelector(`#mastery-${taskName}`),
+    ]),
+  );
 
-const buttons = [...document.querySelectorAll('.task-btn')];
+  buttons = [...document.querySelectorAll('.task-btn')];
+  buttons.forEach((button) => {
+    button.addEventListener('click', () => {
+      selectTask(button.dataset.task);
+    });
+  });
+}
 
 function secondsForNextCompletion(taskName) {
   if (taskName === 'idle') {
@@ -232,8 +309,8 @@ function applyTaskReward(taskName) {
   task.level += 1;
   updateTaskMastery(taskName);
 
-  if (jobTaskMeta[taskName]) {
-    const job = getJobById(taskName);
+  if (taskMeta[taskName]?.type === 'job') {
+    const job = getJobById(taskMeta[taskName].job);
     const moneyGain = (job?.moneyBase ?? 0) * state.runtime.job.level * task.masteryMultiplier;
     const xpGain = (job?.xpBase ?? 0) * task.masteryMultiplier;
 
@@ -250,6 +327,10 @@ function applyTaskReward(taskName) {
 }
 
 function selectTask(taskName) {
+  if (!taskMeta[taskName]) {
+    return;
+  }
+
   activeTask = taskName;
 
   buttons.forEach((button) => {
@@ -376,6 +457,34 @@ async function loadEquipmentDefinitions() {
   }
 }
 
+async function loadTaskDefinitions() {
+  try {
+    const [pack, tasks] = await Promise.all([
+      fetch('./content/packs/base/pack.json'),
+      fetch('./content/packs/base/tasks.json'),
+    ]);
+
+    if (!pack.ok || !tasks.ok) {
+      state.taskDefinitions = buildDefaultTaskDefinitions();
+      return;
+    }
+
+    const merged = mergeContentPacks({
+      packs: {
+        base: {
+          pack: await pack.json(),
+          tasks: await tasks.json(),
+        },
+      },
+      activePackIds: ['base'],
+    });
+
+    state.taskDefinitions = merged.tasks;
+  } catch {
+    state.taskDefinitions = buildDefaultTaskDefinitions();
+  }
+}
+
 const saveService = createSaveService({
   getRuntimeState: () => state.runtime,
   on: eventBus.on.bind(eventBus),
@@ -384,13 +493,11 @@ const saveService = createSaveService({
 
 async function init() {
   state.runtime = saveService.loadGame();
+  await loadTaskDefinitions();
+  rebuildTaskCollections();
   ensureTaskState();
-
-  buttons.forEach((button) => {
-    button.addEventListener('click', () => {
-      selectTask(button.dataset.task);
-    });
-  });
+  renderStaticCollections();
+  bindTaskControls();
 
   await loadEquipmentDefinitions();
   renderEquipmentTemplates();
