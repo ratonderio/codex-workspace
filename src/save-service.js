@@ -58,13 +58,6 @@ function cloneDefaultState() {
 }
 
 function sanitizeRuntimeState(state = {}) {
-  const equippedBySlot =
-    state.equippedBySlot && typeof state.equippedBySlot === 'object'
-      ? state.equippedBySlot
-      : state.equippedEquipmentIds && typeof state.equippedEquipmentIds === 'object'
-        ? state.equippedEquipmentIds
-        : {};
-
   return {
     stats: sanitizeStats(state.stats),
     taskProgress:
@@ -79,7 +72,6 @@ function sanitizeRuntimeState(state = {}) {
     ownedEquipmentIds: Array.isArray(state.ownedEquipmentIds)
       ? state.ownedEquipmentIds
       : [],
-    equippedBySlot,
     equippedBySlot:
       state.equippedBySlot && typeof state.equippedBySlot === 'object'
         ? state.equippedBySlot
