@@ -1,8 +1,10 @@
+import { createDefaultStatsState, sanitizeStats } from './domain/stats/registry.js';
+
 const SAVE_KEY = 'game-save';
 const SAVE_VERSION = 1;
 
 export const defaultRuntimeState = Object.freeze({
-  stats: {},
+  stats: Object.freeze(createDefaultStatsState()),
   taskProgress: {},
   money: 0,
   job: {
@@ -15,7 +17,7 @@ export const defaultRuntimeState = Object.freeze({
 
 function cloneDefaultState() {
   return {
-    stats: {},
+    stats: createDefaultStatsState(),
     taskProgress: {},
     money: 0,
     job: {
@@ -29,7 +31,7 @@ function cloneDefaultState() {
 
 function sanitizeRuntimeState(state = {}) {
   return {
-    stats: state.stats && typeof state.stats === 'object' ? state.stats : {},
+    stats: sanitizeStats(state.stats),
     taskProgress:
       state.taskProgress && typeof state.taskProgress === 'object'
         ? state.taskProgress
