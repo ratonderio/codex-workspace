@@ -1,8 +1,10 @@
-const stats = {
-  strength: { points: 0 },
-  endurance: { points: 0 },
-  dexterity: { points: 0 },
-};
+import {
+  createDefaultStatsState,
+  getStatById,
+  statRegistry,
+} from './src/domain/stats/registry.js';
+
+const stats = createDefaultStatsState();
 
 const economy = {
   money: 0,
@@ -10,82 +12,138 @@ const economy = {
   jobLevel: 1,
 };
 
+const statTaskMeta = Object.fromEntries(
+  statRegistry.map((stat) => [
+    stat.id,
+    {
+      label: `${stat.label} Training`,
+      stat: stat.id,
+    },
+  ]),
+);
+
 const taskMeta = {
-  strength: { label: "Lift Weights", stat: "strength" },
-  endurance: { label: "Long Run", stat: "endurance" },
-  dexterity: { label: "Precision Drill", stat: "dexterity" },
-  work: { label: "Warehouse Shift", stat: null },
-  idle: { label: "Idle", stat: null },
+  ...statTaskMeta,
+  work: { label: 'Warehouse Shift', stat: null },
+  idle: { label: 'Idle', stat: null },
 };
 
-const taskState = {
-  strength: { level: 0, masteryTier: 0, masteryMultiplier: 1, elapsed: 0 },
-  endurance: { level: 0, masteryTier: 0, masteryMultiplier: 1, elapsed: 0 },
-  dexterity: { level: 0, masteryTier: 0, masteryMultiplier: 1, elapsed: 0 },
-  work: { level: 0, masteryTier: 0, masteryMultiplier: 1, elapsed: 0 },
-};
+const taskState = Object.fromEntries(
+  Object.keys(taskMeta)
+    .filter((taskName) => taskName !== 'idle')
+    .map((taskName) => [
+      taskName,
+      { level: 0, masteryTier: 0, masteryMultiplier: 1, elapsed: 0 },
+    ]),
+);
 
-const BASE_SECONDS = {
-  strength: 2.5,
-  endurance: 2.5,
-  dexterity: 2.5,
-  work: 3.2,
-};
+const BASE_SECONDS = Object.fromEntries([
+  ...statRegistry.map((stat) => [stat.id, stat.growth.taskBaseSeconds]),
+  ['work', 3.2],
+]);
 
-const SCALE_FACTOR = {
-  strength: 0.38,
-  endurance: 0.38,
-  dexterity: 0.38,
-  work: 0.22,
-};
+const SCALE_FACTOR = Object.fromEntries([
+  ...statRegistry.map((stat) => [stat.id, stat.growth.taskScaleFactor]),
+  ['work', 0.22],
+]);
 
 const MASTERY_LEVEL_STEP = 100;
 const MASTERY_BONUS_STEP = 0.05;
 const LOOP_MS = 100;
 
-let activeTask = "idle";
+let activeTask = 'idle';
 let previousTimestamp = performance.now();
 
-const statEls = {
-  strength: {
-    value: document.querySelector("#strength-value"),
-    bar: document.querySelector("#strength-progress"),
-    label: document.querySelector("#strength-label"),
-    card: document.querySelector('[data-stat="strength"]'),
-  },
-  endurance: {
-    value: document.querySelector("#endurance-value"),
-    bar: document.querySelector("#endurance-progress"),
-    label: document.querySelector("#endurance-label"),
-    card: document.querySelector('[data-stat="endurance"]'),
-  },
-  dexterity: {
-    value: document.querySelector("#dexterity-value"),
-    bar: document.querySelector("#dexterity-progress"),
-    label: document.querySelector("#dexterity-label"),
-    card: document.querySelector('[data-stat="dexterity"]'),
-  },
-};
+const statCardsContainer = document.querySelector('.stats');
+const controlsContainer = document.querySelector('.controls');
+const masteryGridEl = document.querySelector('.mastery-grid');
 
 const economyEls = {
-  money: document.querySelector("#money-value"),
-  jobXp: document.querySelector("#job-xp-value"),
-  jobLevel: document.querySelector("#job-level-value"),
+  money: document.querySelector('#money-value'),
+  jobXp: document.querySelector('#job-xp-value'),
+  jobLevel: document.querySelector('#job-level-value'),
 };
+
+const activeTaskEl = document.querySelector('#active-task strong');
+const nextGainEl = document.querySelector('#next-gain');
+
+function titleCase(input) {
+  return input.charAt(0).toUpperCase() + input.slice(1);
+}
+
+function createStatCardMarkup(stat) {
+  return `
+    <article class="stat-card" data-stat="${stat.id}" data-category="${stat.category}">
+      <h2>${stat.label}</h2>
+      <p class="stat-meta">Category: ${titleCase(stat.category)}</p>
+      <p class="stat-value" id="${stat.id}-value">${stat.baseValue}</p>
+      <div class="progress-track">
+        <div class="progress-fill" id="${stat.id}-progress"></div>
+      </div>
+      <p class="progress-label" id="${stat.id}-label">Idle</p>
+    </article>
+  `;
+}
+
+function createTaskButtonMarkup(taskName, task) {
+  if (taskName === 'work') {
+    return `<button class="task-btn work" data-task="work">${task.label} <span>+$ / +XP</span></button>`;
+  }
+
+  if (taskName === 'idle') {
+    return '<button class="task-btn idle" data-task="idle">Idle</button>';
+  }
+
+  return `<button class="task-btn" data-task="${taskName}">${task.label} <span>+${taskName.toUpperCase().slice(0, 3)}</span></button>`;
+}
+
+function createMasteryCardMarkup(taskName) {
+  return `<article class="mastery-card" id="mastery-${taskName}"></article>`;
+}
+
+function renderStaticCollections() {
+  statCardsContainer.innerHTML = statRegistry.map(createStatCardMarkup).join('');
+
+  const taskButtonOrder = [...statRegistry.map((stat) => stat.id), 'work', 'idle'];
+  controlsContainer.innerHTML = taskButtonOrder
+    .map((taskName) => createTaskButtonMarkup(taskName, taskMeta[taskName]))
+    .join('');
+
+  const masteryTaskOrder = [...statRegistry.map((stat) => stat.id), 'work'];
+  masteryGridEl.innerHTML = masteryTaskOrder.map(createMasteryCardMarkup).join('');
+}
+
+renderStaticCollections();
+
+const statEls = Object.fromEntries(
+  statRegistry.map((stat) => {
+    const id = stat.id;
+    return [
+      id,
+      {
+        value: document.querySelector(`#${id}-value`),
+        bar: document.querySelector(`#${id}-progress`),
+        label: document.querySelector(`#${id}-label`),
+        card: document.querySelector(`[data-stat="${id}"]`),
+      },
+    ];
+  }),
+);
 
 const masteryEls = {
-  strength: document.querySelector("#mastery-strength"),
-  endurance: document.querySelector("#mastery-endurance"),
-  dexterity: document.querySelector("#mastery-dexterity"),
-  work: document.querySelector("#mastery-work"),
+  ...Object.fromEntries(
+    Object.keys(statTaskMeta).map((taskName) => [
+      taskName,
+      document.querySelector(`#mastery-${taskName}`),
+    ]),
+  ),
+  work: document.querySelector('#mastery-work'),
 };
 
-const activeTaskEl = document.querySelector("#active-task strong");
-const nextGainEl = document.querySelector("#next-gain");
-const buttons = [...document.querySelectorAll(".task-btn")];
+const buttons = [...document.querySelectorAll('.task-btn')];
 
 function secondsForNextCompletion(taskName) {
-  if (taskName === "idle") {
+  if (taskName === 'idle') {
     return Infinity;
   }
 
@@ -105,7 +163,7 @@ function applyTaskReward(taskName) {
   task.level += 1;
   updateTaskMastery(taskName);
 
-  if (taskName === "work") {
+  if (taskName === 'work') {
     const moneyGain = 6 * economy.jobLevel * task.masteryMultiplier;
     const xpGain = 4 * task.masteryMultiplier;
     economy.money += moneyGain;
@@ -114,7 +172,9 @@ function applyTaskReward(taskName) {
   }
 
   const trainedStat = taskMeta[taskName].stat;
-  const statGain = 1 * task.masteryMultiplier;
+  const statDefinition = getStatById(trainedStat);
+  const rewardPerCompletion = statDefinition?.growth.rewardPerCompletion ?? 1;
+  const statGain = rewardPerCompletion * task.masteryMultiplier;
   stats[trainedStat].points += statGain;
 }
 
@@ -122,12 +182,12 @@ function selectTask(taskName) {
   activeTask = taskName;
 
   buttons.forEach((button) => {
-    button.classList.toggle("active", button.dataset.task === taskName);
+    button.classList.toggle('active', button.dataset.task === taskName);
   });
 
   Object.entries(statEls).forEach(([statName, els]) => {
     const training = taskMeta[taskName].stat === statName;
-    els.card.classList.toggle("training", training);
+    els.card.classList.toggle('training', training);
   });
 
   activeTaskEl.textContent = taskMeta[taskName].label;
@@ -138,7 +198,7 @@ function loop() {
   const deltaSeconds = (now - previousTimestamp) / 1000;
   previousTimestamp = now;
 
-  if (activeTask !== "idle") {
+  if (activeTask !== 'idle') {
     const elapsedStore = taskState[activeTask];
     elapsedStore.elapsed += deltaSeconds;
 
@@ -163,7 +223,9 @@ function renderMasteryCard(taskName, card) {
 }
 
 function render() {
-  Object.entries(statEls).forEach(([statName, els]) => {
+  statRegistry.forEach((stat) => {
+    const statName = stat.id;
+    const els = statEls[statName];
     const state = stats[statName];
     const neededSeconds = secondsForNextCompletion(statName);
     const progress = Math.min((taskState[statName].elapsed / neededSeconds) * 100, 100);
@@ -181,8 +243,8 @@ function render() {
     renderMasteryCard(taskName, card);
   });
 
-  if (activeTask === "idle") {
-    nextGainEl.textContent = "Next completion in --";
+  if (activeTask === 'idle') {
+    nextGainEl.textContent = 'Next completion in --';
     return;
   }
 
@@ -192,11 +254,11 @@ function render() {
 }
 
 buttons.forEach((button) => {
-  button.addEventListener("click", () => {
+  button.addEventListener('click', () => {
     selectTask(button.dataset.task);
   });
 });
 
-selectTask("idle");
+selectTask('idle');
 render();
 setInterval(loop, LOOP_MS);

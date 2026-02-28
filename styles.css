@@ -134,6 +134,13 @@ h3 {
   transform: translateY(0);
 }
 
+
+.stat-meta {
+  margin: 0.25rem 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
 .stat-value {
   font-size: clamp(1.7rem, 3vw, 2.1rem);
   margin: 0.25rem 0 0.7rem;
