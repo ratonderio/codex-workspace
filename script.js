@@ -6,6 +6,7 @@ import {
 import { getJobById, jobRegistry } from './src/domain/jobs/registry.js';
 import { buildEquipmentViewModel } from './src/equipment-ui.js';
 import { createSaveService } from './src/save-service.js';
+import { normalizeTaskProgressEntry } from './src/domain/tasks/progress.js';
 import { validateEquipmentDefinitions } from './src/domain/equipment/schema.js';
 
 const MASTERY_LEVEL_STEP = 100;
@@ -136,21 +137,14 @@ function createMasteryCardMarkup(taskName) {
   return `<article class="mastery-card" id="mastery-${taskName}"></article>`;
 }
 
-function toTaskProgress(taskName, source = {}) {
-  return {
-    level: Number.isFinite(source.level) ? source.level : 0,
-    masteryTier: Number.isFinite(source.masteryTier) ? source.masteryTier : 0,
-    masteryMultiplier: Number.isFinite(source.masteryMultiplier)
-      ? source.masteryMultiplier
-      : 1,
-    elapsed: Number.isFinite(source.elapsed) ? source.elapsed : 0,
-  };
+function toTaskProgress(source) {
+  return normalizeTaskProgressEntry(source);
 }
 
 function ensureTaskState() {
   const existing = state.runtime.taskProgress ?? {};
   masteryTaskOrder.forEach((taskName) => {
-    state.runtime.taskProgress[taskName] = toTaskProgress(taskName, existing[taskName]);
+    state.runtime.taskProgress[taskName] = toTaskProgress(existing[taskName]);
   });
 }
 

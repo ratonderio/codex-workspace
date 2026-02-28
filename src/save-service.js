@@ -1,3 +1,4 @@
+import { normalizeTaskProgressEntry } from './domain/tasks/progress.js';
 import { createDefaultStatsState, sanitizeStats } from './domain/stats/registry.js';
 
 const SAVE_KEY = 'game-save';
@@ -57,13 +58,22 @@ function cloneDefaultState() {
   };
 }
 
+function sanitizeTaskProgress(taskProgress) {
+  if (!taskProgress || typeof taskProgress !== 'object') {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(taskProgress).map(([taskId, progress]) => {
+      return [taskId, normalizeTaskProgressEntry(progress)];
+    }),
+  );
+}
+
 function sanitizeRuntimeState(state = {}) {
   return {
     stats: sanitizeStats(state.stats),
-    taskProgress:
-      state.taskProgress && typeof state.taskProgress === 'object'
-        ? state.taskProgress
-        : {},
+    taskProgress: sanitizeTaskProgress(state.taskProgress),
     money: Number.isFinite(state.money) ? state.money : 0,
     job: {
       xp: Number.isFinite(state.job?.xp) ? state.job.xp : 0,
