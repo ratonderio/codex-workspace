@@ -37,6 +37,8 @@ export const defaultRuntimeState = Object.freeze({
   },
   ownedEquipmentIds: [],
   equippedBySlot: {},
+  itemXp: {},
+  itemRank: {},
 });
 
 function cloneDefaultState() {
@@ -50,6 +52,8 @@ function cloneDefaultState() {
     },
     ownedEquipmentIds: [],
     equippedBySlot: {},
+    itemXp: {},
+    itemRank: {},
   };
 }
 
@@ -76,6 +80,14 @@ function sanitizeRuntimeState(state = {}) {
       ? state.ownedEquipmentIds
       : [],
     equippedBySlot,
+    equippedBySlot:
+      state.equippedBySlot && typeof state.equippedBySlot === 'object'
+        ? state.equippedBySlot
+        : state.equippedEquipmentIds && typeof state.equippedEquipmentIds === 'object'
+          ? state.equippedEquipmentIds
+          : {},
+    itemXp: state.itemXp && typeof state.itemXp === 'object' ? state.itemXp : {},
+    itemRank: state.itemRank && typeof state.itemRank === 'object' ? state.itemRank : {},
   };
 }
 
