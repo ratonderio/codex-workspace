@@ -1,0 +1,50 @@
+{
+  "additions": [
+    {
+      "id": "strength",
+      "label": "Strength",
+      "category": "core",
+      "baseValue": 0,
+      "growth": {
+        "rewardPerCompletion": 1,
+        "taskBaseSeconds": 2.5,
+        "taskScaleFactor": 0.38
+      },
+      "caps": {
+        "points": null
+      },
+      "derivedDependencies": []
+    },
+    {
+      "id": "endurance",
+      "label": "Endurance",
+      "category": "core",
+      "baseValue": 0,
+      "growth": {
+        "rewardPerCompletion": 1,
+        "taskBaseSeconds": 2.5,
+        "taskScaleFactor": 0.38
+      },
+      "caps": {
+        "points": null
+      },
+      "derivedDependencies": []
+    },
+    {
+      "id": "dexterity",
+      "label": "Dexterity",
+      "category": "core",
+      "baseValue": 0,
+      "growth": {
+        "rewardPerCompletion": 1,
+        "taskBaseSeconds": 2.5,
+        "taskScaleFactor": 0.38
+      },
+      "caps": {
+        "points": null
+      },
+      "derivedDependencies": []
+    }
+  ],
+  "overrides": []
+}
