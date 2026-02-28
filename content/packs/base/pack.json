@@ -1,0 +1,6 @@
+{
+  "name": "Base World",
+  "version": "1.0.0",
+  "dependencies": [],
+  "loreNamespace": "base"
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "iron_grip_gloves",
+    "name": "Iron Grip Gloves",
+    "slot": "hands",
+    "tier": 1,
+    "tags": ["training", "strength"],
+    "baseEffects": {
+      "strengthGainMultiplier": 1.05
+    },
+    "flavorText": "Stiff leather gloves that make every rep bite just a little harder.",
+    "loreRefs": ["guild_workshop", "dockside_trainers"]
+  },
+  {
+    "id": "windrunner_shoes",
+    "name": "Windrunner Shoes",
+    "slot": "feet",
+    "tier": 1,
+    "tags": ["training", "endurance"],
+    "baseEffects": {
+      "enduranceGainMultiplier": 1.05
+    },
+    "flavorText": "Lightweight soles tuned for long drills and longer shifts.",
+    "loreRefs": ["river_road", "city_marathon"]
+  },
+  {
+    "id": "watchmaker_lens",
+    "name": "Watchmaker Lens",
+    "slot": "head",
+    "tier": 2,
+    "tags": ["training", "dexterity"],
+    "baseEffects": {
+      "dexterityGainMultiplier": 1.08
+    },
+    "flavorText": "A precision lens used by artisans to steady the smallest motions.",
+    "loreRefs": ["clocktower_district", "artisan_guild"]
+  }
+]

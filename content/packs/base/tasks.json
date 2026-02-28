@@ -1,0 +1,9 @@
+[
+  { "id": "strength", "label": "Strength Training", "type": "stat" },
+  { "id": "endurance", "label": "Endurance Training", "type": "stat" },
+  { "id": "dexterity", "label": "Dexterity Training", "type": "stat" },
+  { "id": "warehouse", "label": "Warehouse Shift", "type": "job" },
+  { "id": "courier", "label": "Courier Route", "type": "job" },
+  { "id": "artisan", "label": "Artisan Contract", "type": "job" },
+  { "id": "idle", "label": "Idle", "type": "idle" }
+]
