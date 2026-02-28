@@ -12,7 +12,9 @@ export const defaultRuntimeState = Object.freeze({
     level: 1,
   },
   ownedEquipmentIds: [],
-  equippedEquipmentIds: {},
+  equippedBySlot: {},
+  itemXp: {},
+  itemRank: {},
 });
 
 function cloneDefaultState() {
@@ -25,7 +27,9 @@ function cloneDefaultState() {
       level: 1,
     },
     ownedEquipmentIds: [],
-    equippedEquipmentIds: {},
+    equippedBySlot: {},
+    itemXp: {},
+    itemRank: {},
   };
 }
 
@@ -44,10 +48,14 @@ function sanitizeRuntimeState(state = {}) {
     ownedEquipmentIds: Array.isArray(state.ownedEquipmentIds)
       ? state.ownedEquipmentIds
       : [],
-    equippedEquipmentIds:
-      state.equippedEquipmentIds && typeof state.equippedEquipmentIds === 'object'
-        ? state.equippedEquipmentIds
-        : {},
+    equippedBySlot:
+      state.equippedBySlot && typeof state.equippedBySlot === 'object'
+        ? state.equippedBySlot
+        : state.equippedEquipmentIds && typeof state.equippedEquipmentIds === 'object'
+          ? state.equippedEquipmentIds
+          : {},
+    itemXp: state.itemXp && typeof state.itemXp === 'object' ? state.itemXp : {},
+    itemRank: state.itemRank && typeof state.itemRank === 'object' ? state.itemRank : {},
   };
 }
 
