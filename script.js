@@ -100,6 +100,11 @@ const economyEls = {
 const activeTaskEl = document.querySelector('#active-task strong');
 const nextGainEl = document.querySelector('#next-gain');
 
+
+function isFileProtocol() {
+  return globalThis.location?.protocol === 'file:';
+}
+
 function titleCase(input) {
   return input.charAt(0).toUpperCase() + input.slice(1);
 }
@@ -438,6 +443,10 @@ function render() {
 }
 
 async function loadEquipmentDefinitions() {
+  if (isFileProtocol()) {
+    return;
+  }
+
   try {
     const response = await fetch('./data/equipment.json');
     if (!response.ok) {
@@ -458,6 +467,11 @@ async function loadEquipmentDefinitions() {
 }
 
 async function loadTaskDefinitions() {
+  if (isFileProtocol()) {
+    state.taskDefinitions = buildDefaultTaskDefinitions();
+    return;
+  }
+
   try {
     const [pack, tasks] = await Promise.all([
       fetch('./content/packs/base/pack.json'),

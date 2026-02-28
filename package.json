@@ -5,7 +5,11 @@
   "scripts": {
     "test": "node --test",
     "validate-content": "node scripts/validate-content.js",
-    "precommit": "npm run validate-content && npm test",
-    "prepare": "git config core.hooksPath .githooks || true"
+    "precommit": "npm run validate-content && npm run build && npm test",
+    "prepare": "git config core.hooksPath .githooks || true",
+    "build": "esbuild script.js --bundle --format=iife --platform=browser --outfile=app.bundle.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.3"
   }
 }
