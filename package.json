@@ -1,15 +1,13 @@
 {
-  "name": "codex-workspace",
+  "name": "games-workspace",
   "private": true,
-  "type": "module",
   "scripts": {
-    "test": "node --test",
-    "validate-content": "node scripts/validate-content.js",
-    "precommit": "npm run validate-content && npm run build && npm test",
-    "prepare": "git config core.hooksPath .githooks || true",
-    "build": "esbuild script.js --bundle --format=iife --platform=browser --outfile=app.bundle.js"
-  },
-  "devDependencies": {
-    "esbuild": "^0.27.3"
+    "setup": "npm --prefix projects/type-hero ci",
+    "test": "npm --prefix projects/type-hero test",
+    "validate-content": "npm --prefix projects/type-hero run validate-content",
+    "build": "npm --prefix projects/type-hero run build",
+    "check": "npm run validate-content && npm test",
+    "precommit": "npm run check",
+    "prepare": "git config core.hooksPath .githooks"
   }
 }
